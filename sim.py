@@ -4,6 +4,7 @@ from thrustCurve import ThrustCurve
 from math import sin, cos, sqrt, atan2, asin, degrees
 from collections import deque
 import random
+import csv
 
 class Quaternion:
 	def __init__(self, w=1.0, x=0.0, y=0.0, z=0.0):
@@ -84,8 +85,8 @@ class Sim:
 		self.A = 0.00456
 		self.wind_noise = 0.05
 		self.rocket = Rocket(
-			0.4, 0.1, 0.4,
-			0.4, 0.1, 0.4,
+			0.4, 0.1, 0.1,
+			0.4, 0.1, 0.1,
 		)
 		self.gimbal_delay_steps = max(1, round(0.03 / self.dt))
 		self.gimbal_buffer = deque([Vector2(0.001, 0.001) for _ in range(self.gimbal_delay_steps)])
@@ -98,7 +99,7 @@ class Sim:
 		drag = 0.5 * rho * abs(v) * v * self.Cd * self.A
 	
 		return Vector3(0, 0, -drag)
-	def simulate(self, time):
+	def simulate(self, time, filename):
 		x = []
 		y = []
 		z = []
@@ -139,8 +140,10 @@ class Sim:
 			force_world += Vector3(0, 0, -9.81 * self.mass) # gravity in WORLD FRAME
 			force_world += self.compute_drag()
 			self.acceleration = force_world / self.mass
+			# due to floating point errors+integration timestep it's -1 not 0
 			if self.position.z < -1:
-				print("max: ", apogee)
+				print("Highest recorded point in flight: ", apogee)
+				self.saveToCSV(x,y,z,q, filename)
 				return x, y, z, q
 			self.velocity += self.acceleration * self.dt
 			self.position += self.velocity * self.dt
@@ -161,5 +164,23 @@ class Sim:
 			z.append(self.position.z)
 			q.append(self.orientation)
 
-		print("max: ", apogee)
+		self.saveToCSV(x,y,z,q, filename)
 		return x, y, z, q
+
+	def saveToCSV(self, x, y, z, q, filename):
+		with open(filename, "w", newline="") as f:
+			writer = csv.writer(f)
+
+			# header
+			writer.writerow(["x", "y", "z", "qw", "qx", "qy", "qz"])
+			for i in range(len(x)):
+				quat = q[i]
+				writer.writerow([
+					x[i],
+					y[i],
+					z[i],
+					quat.w,
+					quat.x,
+					quat.y,
+					quat.z
+				])

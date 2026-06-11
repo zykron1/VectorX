@@ -6,10 +6,10 @@ from renderer import Renderer
 dt = 0.0001
 simulation = Sim("F15.eng", dt) 
 
-# 10 seconds
-x, y, z, q = simulation.simulate(30)
+# 30 seconds
+x, y, z, q = simulation.simulate(30, "output.csv")
 
 # Render
-render = Renderer(x,y,z,q)
+render = Renderer("output.csv")
 time.sleep(2)
-render.animate(dt, 50) # 5x slower
+render.animate(dt, 50)

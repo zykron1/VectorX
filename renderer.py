@@ -1,14 +1,25 @@
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-import numpy as np
+from sim import Quaternion
 from vector import Vector3
+import numpy as np
+import pandas as pd
 
 class Renderer:
-	def __init__(self, x, y, z, orientations=None):
-		self.x = x
-		self.y = y
-		self.z = z
-		self.orientations = orientations 
+	def __init__(self, filename):
+		dataframe = pd.read_csv(filename)
+		self.x = dataframe["x"].values
+		self.y = dataframe["y"].values
+		self.z = dataframe["z"].values
+		self.orientations = [
+		    Quaternion(qw, qx, qy, qz)
+		    for qw, qx, qy, qz in zip(
+		        dataframe["qw"],
+		        dataframe["qx"],
+		        dataframe["qy"],
+		        dataframe["qz"]
+		    )
+		]
 
 	def show(self):
 		fig = plt.figure()
@@ -20,6 +31,7 @@ class Renderer:
 		plt.show()
 
 	def animate(self, dt, interval=50):
+		plt.style.use('dark_background')
 		steps = max(1, round(interval / (dt * 1000)))
 		has_orientation = self.orientations is not None and len(self.orientations) > 0
 		fig = plt.figure(figsize=(12, 6) if has_orientation else (6, 6))
