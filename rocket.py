@@ -1,6 +1,5 @@
 from pid import PID
 from vector import Vector3, Vector2
-import random
 
 class Rocket:
 	def __init__(self, XKp, XKi, XKd, YKp, YKi, YKd):
@@ -10,7 +9,7 @@ class Rocket:
 		self.acceleration = Vector3()
 		self.orientalVelocity = Vector3()
 
-	def guide(self, dt, orientation, acceleration):
+	def guide(self, dt: float, orientation: Tuple[float, float, float], acceleration) -> Vector2:
 		# In a real rocket, the control algorithm recieves angular velocity not orientation
 		# For simplicity sake and the verification of if PID algorithms work I chose to use this simple boilerplate
 		# TODO: Implement HIL simulation with a real flight computer

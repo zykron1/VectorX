@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 class Renderer:
-	def __init__(self, filename):
+	def __init__(self, filename: str) -> None:
 		dataframe = pd.read_csv(filename)
 		self.x = dataframe["x"].values
 		self.y = dataframe["y"].values
@@ -21,7 +21,7 @@ class Renderer:
 		    )
 		]
 
-	def show(self):
+	def show(self) -> None:
 		fig = plt.figure()
 		ax = fig.add_subplot(111, projection='3d')
 		ax.plot(self.x, self.y, self.z)
@@ -30,7 +30,7 @@ class Renderer:
 		ax.set_zlabel("Z")
 		plt.show()
 
-	def animate(self, dt, interval=50):
+	def animate(self, dt: float, interval: int = 50) -> animation.FuncAnimation:
 		plt.style.use('dark_background')
 		steps = max(1, round(interval / (dt * 1000)))
 		has_orientation = self.orientations is not None and len(self.orientations) > 0

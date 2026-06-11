@@ -1,3 +1,5 @@
+from __future__ import annotations
+from typing import List, Tuple
 from vector import Vector3, Vector2
 from rocket import Rocket
 from thrustCurve import ThrustCurve
@@ -7,23 +9,23 @@ import random
 import csv
 
 class Quaternion:
-	def __init__(self, w=1.0, x=0.0, y=0.0, z=0.0):
-		self.w = w
-		self.x = x
-		self.y = y
-		self.z = z
+	def __init__(self, w: float = 1.0, x: float = 0.0, y:float = 0.0, z: float = 0.0) -> None:
+		self.w: float = w
+		self.x: float = x
+		self.y: float = y
+		self.z: float = z
 
-	def normalize(self):
+	def normalize(self) -> "Quaternion":
 		n = sqrt(self.w**2 + self.x**2 + self.y**2 + self.z**2)
 		return Quaternion(self.w/n, self.x/n, self.y/n, self.z/n)
 
-	def rotate(self, v):
+	def rotate(self, v: Vector3) -> Vector3:
 		qv = Quaternion(0, v.x, v.y, v.z)
 		q_conj = Quaternion(self.w, -self.x, -self.y, -self.z)
 		r = self._mul(qv)._mul(q_conj)
 		return Vector3(r.x, r.y, r.z)
 
-	def _mul(self, other):
+	def _mul(self, other: "Quaternion") -> "Quaternion":
 		return Quaternion(
 			self.w*other.w - self.x*other.x - self.y*other.y - self.z*other.z,
 			self.w*other.x + self.x*other.w + self.y*other.z - self.z*other.y,
@@ -31,7 +33,7 @@ class Quaternion:
 			self.w*other.z + self.x*other.y - self.y*other.x + self.z*other.w,
 		)
 
-	def integrate(self, omega, dt):
+	def integrate(self, omega: Vector3, dt: float) -> "Quaternion":
 		omega_quat = Quaternion(0, omega.x, omega.y, omega.z)
 		q_dot = self._mul(omega_quat)
 		return Quaternion(
@@ -41,7 +43,7 @@ class Quaternion:
 			self.z + 0.5 * q_dot.z * dt,
 		).normalize()
 
-	def to_euler(self):
+	def to_euler(self) -> Tuple[float, float, float]:
 		sinr_cosp = 2 * (self.w * self.x + self.y * self.z)
 		cosr_cosp = 1 - 2 * (self.x * self.x + self.y * self.y)
 		roll = atan2(sinr_cosp, cosr_cosp)
@@ -63,7 +65,7 @@ class Quaternion:
 		)
 
 class Sim:
-	def __init__(self, curve, dt):
+	def __init__(self, curve: str, dt: float) -> None:
 		self.dt = dt
 		self.thrustCurve = ThrustCurve(curve)
 		self.position = Vector3()
@@ -93,13 +95,14 @@ class Sim:
 		self.gimbal_query_interval = max(1, round(0.01 / self.dt))
 		self.last_gimbal_cmd = Vector2(0.001, 0.001)
 
-	def compute_drag(self, rho=1.225):
+	def compute_drag(self, rho: float = 1.225) -> Vector3:
 		v = self.velocity.z
 	
 		drag = 0.5 * rho * abs(v) * v * self.Cd * self.A
 	
 		return Vector3(0, 0, -drag)
-	def simulate(self, time, filename):
+
+	def simulate(self, time: float, filename: str) -> Tuple[List[float], List[float], List[float], List[Quaternion]]:
 		x = []
 		y = []
 		z = []
@@ -124,7 +127,7 @@ class Sim:
 			self.gimbal_buffer.append(gimbal_cmd)
 			gimbal = self.gimbal_buffer.popleft()
 	
-			thrust = self.thrustCurve.get_thrust((i * self.dt) * 1000)
+			thrust = self.thrustCurve.get_thrust(int((i * self.dt) * 1000))
 			if thrust > 0:
 				self.motor_mass -= self.motor_mass_step
 			self.mass = 1.0 + self.motor_mass
@@ -167,7 +170,7 @@ class Sim:
 		self.saveToCSV(x,y,z,q, filename)
 		return x, y, z, q
 
-	def saveToCSV(self, x, y, z, q, filename):
+	def saveToCSV(self, x: List[float], y: List[float], z: List[float], q: List[Quaternion], filename) -> None:
 		with open(filename, "w", newline="") as f:
 			writer = csv.writer(f)
 
