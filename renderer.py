@@ -11,14 +11,16 @@ class Renderer:
 		self.x = dataframe["x"].values
 		self.y = dataframe["y"].values
 		self.z = dataframe["z"].values
+		self.xg = dataframe["xg"].values
+		self.yg = dataframe["yg"].values
 		self.orientations = [
-		    Quaternion(qw, qx, qy, qz)
-		    for qw, qx, qy, qz in zip(
-		        dataframe["qw"],
-		        dataframe["qx"],
-		        dataframe["qy"],
-		        dataframe["qz"]
-		    )
+			Quaternion(qw, qx, qy, qz)
+			for qw, qx, qy, qz in zip(
+				dataframe["qw"],
+				dataframe["qx"],
+				dataframe["qy"],
+				dataframe["qz"]
+			)
 		]
 
 	def show(self) -> None:
@@ -110,3 +112,49 @@ class Renderer:
 		plt.tight_layout()
 		plt.show()
 		return ani
+
+	def plot_2d(self, dt: float) -> None:
+		t = np.arange(len(self.x)) * dt
+	
+		pitch = [q.to_euler()[0] for q in self.orientations]
+		roll  = [q.to_euler()[1] for q in self.orientations]
+		yaw   = [q.to_euler()[2] for q in self.orientations]
+	
+		fig, axes = plt.subplots(4, 2, figsize=(14, 18), constrained_layout=True)
+		fig.suptitle("Flight Data")
+	
+		axes[0, 0].plot(t, pitch)
+		axes[0, 0].set_title("Pitch (deg)")
+		axes[0, 0].set_xlabel("Time (s)")
+	
+		axes[1, 0].plot(t, roll)
+		axes[1, 0].set_title("Roll (deg)")
+		axes[1, 0].set_xlabel("Time (s)")
+	
+		axes[2, 0].plot(t, yaw)
+		axes[2, 0].set_title("Yaw (deg)")
+		axes[2, 0].set_xlabel("Time (s)")
+	
+		axes[0, 1].plot(t, self.z)
+		axes[0, 1].set_title("Altitude (m)")
+		axes[0, 1].set_xlabel("Time (s)")
+	
+		axes[1, 1].plot(t, self.x, label="x")
+		axes[1, 1].plot(t, self.y, label="y")
+		axes[1, 1].set_title("Horizontal Position (m)")
+		axes[1, 1].set_xlabel("Time (s)")
+		axes[1, 1].legend()
+	
+		axes[2, 1].plot(t, self.xg, color="tab:blue")
+		axes[2, 1].set_title("Gimbal X (deg)")
+		axes[2, 1].set_xlabel("Time (s)")
+		axes[2, 1].set_xlim(0, 3.5)
+	
+		axes[3, 1].plot(t, self.yg, color="tab:orange")
+		axes[3, 1].set_title("Gimbal Y (deg)")
+		axes[3, 1].set_xlabel("Time (s)")
+		axes[3, 1].set_xlim(0, 3.5)
+	
+		axes[3, 0].axis("off")
+	
+		plt.show()

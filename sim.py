@@ -102,27 +102,34 @@ class Sim:
 	
 		return Vector3(0, 0, -drag)
 
-	def simulate(self, time: float, filename: str) -> Tuple[List[float], List[float], List[float], List[Quaternion]]:
+	def simulate(self, time: float, filename: str) -> None:
 		x = []
 		y = []
 		z = []
 		q = []
+		xgimbal = []
+		ygimbal = []
+
 		xbias = random.randint(-10, 10) / 10
 		ybias = random.randint(-10, 10) / 10
 		apogee = 0
 		for i in range(int(time / self.dt)):
-			if i % self.gimbal_query_interval == 0:
+			if i % self.gimbal_query_interval == 0 and i*self.dt < 3.45:
 				gimbal_cmd = self.rocket.guide(
 					self.dt*self.gimbal_query_interval,
 					self.orientation.to_euler(),
 					self.acceleration
 				)
+				xgimbal.append(gimbal_cmd.x)
+				ygimbal.append(gimbal_cmd.y)
 				gimbal_cmd.x += xbias
 				gimbal_cmd.y += ybias
 				gimbal_cmd = gimbal_cmd.to_radians()
 				self.last_gimbal_cmd = gimbal_cmd
 			else:
 				gimbal_cmd = self.last_gimbal_cmd
+				xgimbal.append(self.last_gimbal_cmd.x)
+				ygimbal.append(self.last_gimbal_cmd.y)
 			
 			self.gimbal_buffer.append(gimbal_cmd)
 			gimbal = self.gimbal_buffer.popleft()
@@ -149,13 +156,12 @@ class Sim:
 
 			# due to floating point errors+integration timestep it's -1 not 0
 			if self.position.z < -1:
-				print("Highest recorded point in flight: ", apogee)
-				self.saveToCSV(x,y,z,q, filename)
-				return x, y, z, q
+				print(f"Highest recorded point in flight: ", apogee)
+				self.saveToCSV(x,y,z,q,xgimbal,ygimbal, filename)
+				return
 
 			self.velocity += self.acceleration * self.dt
 			self.position += self.velocity * self.dt
-			print(f"t={i} alt={self.position.z} orientation={self.orientation.to_euler()} gimbal={gimbal}")
 
 			if self.position.z > apogee:
 				apogee = self.position.z
@@ -182,15 +188,15 @@ class Sim:
 			q.append(self.orientation)
 
 		print("Highest recorded point in flight: ", apogee)
-		self.saveToCSV(x,y,z,q, filename)
-		return x, y, z, q
+		self.saveToCSV(x,y,z,q,xgimbal,ygimbal, filename)
+		return
 
-	def saveToCSV(self, x: List[float], y: List[float], z: List[float], q: List[Quaternion], filename) -> None:
+	def saveToCSV(self, x: List[float], y: List[float], z: List[float], q: List[Quaternion], xg: List[float], yg: List[float], filename: str) -> None:
 		with open(filename, "w", newline="") as f:
 			writer = csv.writer(f)
 
 			# header
-			writer.writerow(["x", "y", "z", "qw", "qx", "qy", "qz"])
+			writer.writerow(["x", "y", "z", "qw", "qx", "qy", "qz", "xg", "yg"])
 			for i in range(len(x)):
 				quat = q[i]
 				writer.writerow([
@@ -200,5 +206,8 @@ class Sim:
 					quat.w,
 					quat.x,
 					quat.y,
-					quat.z
+					quat.z,
+					xg[i],
+					yg[i]
 				])
+		print(f"Saved data to {filename}")

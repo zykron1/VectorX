@@ -10,14 +10,14 @@ simulation = Sim("F15.eng", dt, Rocket(
 	0.4, 0.1, 0.1,
 	),
 
-	enableDrag=False,
+	enableDrag=True,
 	enableTurbulence=True,
 ) 
 
 # 30 seconds
-x, y, z, q = simulation.simulate(30, "output.csv")
+simulation.simulate(30, "output.csv")
 
 # Render
 render = Renderer("output.csv")
-time.sleep(2)
+render.plot_2d(dt)
 render.animate(dt, 50)
