@@ -23,14 +23,13 @@ class Renderer:
 			)
 		]
 
-	def show(self) -> None:
+	def trajectory(self) -> None:
 		fig = plt.figure()
 		ax = fig.add_subplot(111, projection='3d')
 		ax.plot(self.x, self.y, self.z)
 		ax.set_xlabel("X")
 		ax.set_ylabel("Y")
 		ax.set_zlabel("Z")
-		plt.show()
 
 	def animate(self, dt: float, interval: int = 50) -> animation.FuncAnimation:
 		plt.style.use('dark_background')
@@ -157,4 +156,6 @@ class Renderer:
 	
 		axes[3, 0].axis("off")
 	
+
+	def show(self):
 		plt.show()
