@@ -74,16 +74,16 @@ class Sim:
 		self.orientation = Quaternion() # WORLD FRAME
 		self.orientalVelocity = Vector3() # BODY FRAME
 		self.orientalAcceleration = Vector3() # BODY FRAME
-		self.mass = 1
+		self.mass = 1.0  # dry mass only, no motor mass added
 		self.motor_mass = 0.095
-		self.motor_mass_end = 0.095 * (1 - 0.06) # 6% loss
 		self.motor_mass_initial = self.motor_mass
+		self.motor_mass_end = 0.095 * 0.06	# only the lost portion matters
 		self.thrust_steps = max(1, round(3.45 / dt))
-		self.motor_mass_step = (self.motor_mass_initial - self.motor_mass_end) / self.thrust_steps
+		self.motor_mass_step = (self.motor_mass - self.motor_mass_end) / self.thrust_steps
 		self.inertia_initial = 0.009365
 		self.inertia = self.inertia_initial
 		self.cm_tvc = 0.335
-		self.Cd = 1.2
+		self.Cd = 0.65
 		self.A = 0.00456
 		self.wind_noise = 0.05
 		self.rocket = rocket
@@ -130,7 +130,7 @@ class Sim:
 			thrust = self.thrustCurve.get_thrust(int((i * self.dt) * 1000))
 			if thrust > 0:
 				self.motor_mass = max(self.motor_mass_end, self.motor_mass - self.motor_mass_step)
-			self.mass = 1.0 + self.motor_mass
+			self.mass = 1.0 - (self.motor_mass_initial - self.motor_mass)
 			self.inertia = self.inertia_initial * (self.mass / (1.0 + self.motor_mass_initial))
 
 			#thrust = 15.0
@@ -152,6 +152,7 @@ class Sim:
 				print("Highest recorded point in flight: ", apogee)
 				self.saveToCSV(x,y,z,q, filename)
 				return x, y, z, q
+
 			self.velocity += self.acceleration * self.dt
 			self.position += self.velocity * self.dt
 			print(f"t={i} alt={self.position.z} orientation={self.orientation.to_euler()} gimbal={gimbal}")

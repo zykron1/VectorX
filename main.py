@@ -10,8 +10,8 @@ simulation = Sim("F15.eng", dt, Rocket(
 	0.4, 0.1, 0.1,
 	),
 
-	enableDrag=True,
-	enableTurbulence=True
+	enableDrag=False,
+	enableTurbulence=True,
 ) 
 
 # 30 seconds
