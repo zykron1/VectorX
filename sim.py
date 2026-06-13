@@ -65,7 +65,7 @@ class Quaternion:
 		)
 
 class Sim:
-	def __init__(self, curve: str, dt: float) -> None:
+	def __init__(self, curve: str, dt: float, rocket: Rocket, *args, **kwargs) -> None:
 		self.dt = dt
 		self.thrustCurve = ThrustCurve(curve)
 		self.position = Vector3()
@@ -86,14 +86,14 @@ class Sim:
 		self.Cd = 1.2
 		self.A = 0.00456
 		self.wind_noise = 0.05
-		self.rocket = Rocket(
-			0.4, 0.1, 0.1,
-			0.4, 0.1, 0.1,
-		)
-		self.gimbal_delay_steps = max(1, round(0.03 / self.dt))
+		self.rocket = rocket
+		self.gimbal_delay_steps = max(1, round(0.02 / self.dt))
 		self.gimbal_buffer = deque([Vector2(0.001, 0.001) for _ in range(self.gimbal_delay_steps)])
 		self.gimbal_query_interval = max(1, round(0.01 / self.dt))
 		self.last_gimbal_cmd = Vector2(0.001, 0.001)
+
+		self.drag_on = kwargs.get("enableDrag", False)
+		self.turbulence_on = kwargs.get("enableTurbulence", False)
 
 	def compute_drag(self, rho: float = 1.225) -> Vector3:
 		v = self.velocity.z
@@ -107,8 +107,8 @@ class Sim:
 		y = []
 		z = []
 		q = []
-		xbias = random.randint(-10, 10) / 10;
-		ybias = random.randint(-10, 10) / 10;
+		xbias = random.randint(-10, 10) / 10
+		ybias = random.randint(-10, 10) / 10
 		apogee = 0
 		for i in range(int(time / self.dt)):
 			if i % self.gimbal_query_interval == 0:
@@ -129,7 +129,7 @@ class Sim:
 	
 			thrust = self.thrustCurve.get_thrust(int((i * self.dt) * 1000))
 			if thrust > 0:
-				self.motor_mass -= self.motor_mass_step
+				self.motor_mass = max(self.motor_mass_end, self.motor_mass - self.motor_mass_step)
 			self.mass = 1.0 + self.motor_mass
 			self.inertia = self.inertia_initial * (self.mass / (1.0 + self.motor_mass_initial))
 
@@ -139,10 +139,14 @@ class Sim:
 				sin(gimbal.y) * thrust,	# lateral Y (yaw)
 				cos(gimbal.x) * cos(gimbal.y) * thrust # axial
 			)
+
 			force_world = self.orientation.rotate(force_body) # BODY FRAME -> WORLD FRAME
 			force_world += Vector3(0, 0, -9.81 * self.mass) # gravity in WORLD FRAME
-			force_world += self.compute_drag()
+			if self.drag_on:
+				force_world += self.compute_drag()
+
 			self.acceleration = force_world / self.mass
+
 			# due to floating point errors+integration timestep it's -1 not 0
 			if self.position.z < -1:
 				print("Highest recorded point in flight: ", apogee)
@@ -151,13 +155,22 @@ class Sim:
 			self.velocity += self.acceleration * self.dt
 			self.position += self.velocity * self.dt
 			print(f"t={i} alt={self.position.z} orientation={self.orientation.to_euler()} gimbal={gimbal}")
+
 			if self.position.z > apogee:
 				apogee = self.position.z
-			torque_body = Vector3(
-				force_body.y * self.cm_tvc + random.uniform(-self.wind_noise, self.wind_noise),
-				force_body.x * self.cm_tvc + random.uniform(-self.wind_noise, self.wind_noise),
-				0.0
-			)
+
+			if self.turbulence_on:
+				torque_body = Vector3(
+					force_body.y * self.cm_tvc + random.uniform(-self.wind_noise, self.wind_noise),
+					force_body.x * self.cm_tvc + random.uniform(-self.wind_noise, self.wind_noise),
+					0.0
+				)
+			else:
+				torque_body = Vector3(
+					force_body.y * self.cm_tvc,
+					force_body.x * self.cm_tvc,
+					0.0
+				)
 			
 			self.orientalAcceleration = torque_body / self.inertia
 			self.orientalVelocity += self.orientalAcceleration * self.dt
@@ -167,6 +180,7 @@ class Sim:
 			z.append(self.position.z)
 			q.append(self.orientation)
 
+		print("Highest recorded point in flight: ", apogee)
 		self.saveToCSV(x,y,z,q, filename)
 		return x, y, z, q
 
