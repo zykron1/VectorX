@@ -80,8 +80,7 @@ class Sim:
 		self.motor_mass_end = 0.095 * 0.06	# only the lost portion matters
 		self.thrust_steps = max(1, round(3.45 / dt))
 		self.motor_mass_step = (self.motor_mass - self.motor_mass_end) / self.thrust_steps
-		self.inertia_initial = 0.009365
-		self.inertia = self.inertia_initial
+		self.inertia = 0.009365
 		self.cm_tvc = 0.335
 		self.Cd = 0.65
 		self.A = 0.00456
@@ -138,7 +137,6 @@ class Sim:
 			if thrust > 0:
 				self.motor_mass = max(self.motor_mass_end, self.motor_mass - self.motor_mass_step)
 			self.mass = 1.0 - (self.motor_mass_initial - self.motor_mass)
-			self.inertia = self.inertia_initial * (self.mass / (1.0 + self.motor_mass_initial))
 
 			#thrust = 15.0
 			force_body = Vector3(
