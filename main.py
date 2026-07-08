@@ -6,8 +6,8 @@ from rocket import Rocket
 # 0.1 ms dt
 dt = 0.0001
 simulation = Sim("F15.eng", dt, Rocket(
-	0.4, 0.1, 0.1,
-	0.4, 0.1, 0.1,
+	0.6, 0.1, 0.05,
+	0.6, 0.1, 0.05,
 	),
 
 	enableDrag=True,

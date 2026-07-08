@@ -74,14 +74,15 @@ class Sim:
 		self.orientation = Quaternion() # WORLD FRAME
 		self.orientalVelocity = Vector3() # BODY FRAME
 		self.orientalAcceleration = Vector3() # BODY FRAME
-		self.mass = 1.0  # dry mass only, no motor mass added
-		self.motor_mass = 0.095
+		self.dry_mass = 0.591
+		self.motor_mass = 0.091
 		self.motor_mass_initial = self.motor_mass
-		self.motor_mass_end = 0.095 * 0.06	# only the lost portion matters
+		self.motor_mass_end = 0.091 * 0.06
+		self.mass = self.dry_mass + self.motor_mass
 		self.thrust_steps = max(1, round(3.45 / dt))
 		self.motor_mass_step = (self.motor_mass - self.motor_mass_end) / self.thrust_steps
-		self.inertia = 0.009365
-		self.cm_tvc = 0.335
+		self.inertia = 0.0226727431
+		self.cm_tvc = 0.25
 		self.Cd = 0.65
 		self.A = 0.00456
 		self.wind_noise = 0.05
@@ -136,7 +137,7 @@ class Sim:
 			thrust = self.thrustCurve.get_thrust(int((i * self.dt) * 1000))
 			if thrust > 0:
 				self.motor_mass = max(self.motor_mass_end, self.motor_mass - self.motor_mass_step)
-			self.mass = 1.0 - (self.motor_mass_initial - self.motor_mass)
+			self.mass = self.dry_mass + self.motor_mass
 
 			#thrust = 15.0
 			force_body = Vector3(
